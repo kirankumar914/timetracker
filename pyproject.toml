@@ -7,5 +7,6 @@ requires-python = ">=3.13"
 dependencies = [
     "fastapi>=0.141.1",
     "fastmcp>=4.0.3",
+    "psycopg2-binary>=2.9.10",
     "uvicorn[standard]>=0.52.4",
 ]
