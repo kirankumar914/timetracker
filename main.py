@@ -1,6 +1,6 @@
 """
 TimeTrack -- one running application, two front doors onto the same
-SQLite database of logged time entries:
+PostgreSQL database of logged time entries:
 
   1. A real website (served from ./static) -- for people, in a browser
   2. An MCP server, mounted at /mcp -- for AI assistants, over HTTP
@@ -15,6 +15,8 @@ Setup:
 Then visit http://127.0.0.1:8000 for the website,
 and http://127.0.0.1:8000/mcp is the MCP endpoint (Streamable HTTP).
 """
+import os
+
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -23,8 +25,10 @@ from fastmcp import FastMCP
 
 import database as db
 
-# ---------- persistence, initialized once at startup ----------
-db.init_db()
+# Horizon runs `fastmcp inspect` during the image build before runtime
+# environment variables are available, so database initialization must wait.
+if os.getenv("PGPASSWORD") or os.getenv("DATABASE_URL"):
+    db.init_db()
 
 # ---------- Step 1: build the MCP server FIRST ----------
 # Hand-curated tools, calling the SAME database functions the REST API
