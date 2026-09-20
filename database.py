@@ -2,6 +2,7 @@
 import os
 
 import psycopg2
+from psycopg2 import sql
 from psycopg2.extras import RealDictCursor
 
 
@@ -9,19 +10,27 @@ PGHOST = "a712wc.h.filess.io"
 PGPORT = "61008"
 PGDATABASE = "time_tracking_db_fellitgift"
 PGUSER = "time_tracking_db_fellitgift"
+PGSCHEMA = os.getenv("PGSCHEMA", "public")
 
 
 def get_connection():
     database_url = os.getenv("DATABASE_URL")
     if database_url:
-        return psycopg2.connect(database_url)
-    return psycopg2.connect(
-        dbname=PGDATABASE,
-        user=PGUSER,
-        password=os.environ["PGPASSWORD"],
-        host=PGHOST,
-        port=PGPORT,
-    )
+        conn = psycopg2.connect(database_url)
+    else:
+        conn = psycopg2.connect(
+            dbname=PGDATABASE,
+            user=PGUSER,
+            password=os.environ["PGPASSWORD"],
+            host=PGHOST,
+            port=PGPORT,
+        )
+    cursor = conn.cursor()
+    cursor.execute(sql.SQL("CREATE SCHEMA IF NOT EXISTS {};").format(sql.Identifier(PGSCHEMA)))
+    cursor.execute(sql.SQL("SET search_path TO {};").format(sql.Identifier(PGSCHEMA)))
+    cursor.close()
+    conn.commit()
+    return conn
 
 
 def _cursor(conn):
