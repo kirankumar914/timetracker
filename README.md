@@ -17,18 +17,15 @@ AI assistant, and both see the exact same data.
 
 ## PostgreSQL configuration
 
-TimeTrack uses PostgreSQL for writable, persistent deployment storage. Set
-these environment variables locally and in Horizon:
+TimeTrack uses PostgreSQL for writable, persistent deployment storage. The
+host, port, database, and user are configured in `database.py`. Set only the
+password in Horizon:
 
 ```bash
-export PGHOST="your-postgres-host"
-export PGPORT="your-postgres-port"
-export PGDATABASE="your-database-name"
-export PGUSER="your-database-user"
 export PGPASSWORD="your-database-password"
 ```
 
-Alternatively, set one `DATABASE_URL` variable containing the PostgreSQL
+Alternatively, set one `DATABASE_URL` variable containing the full PostgreSQL
 connection URL. Never commit database credentials to Git.
 
 ## What's inside
@@ -67,8 +64,8 @@ before writing this. Free for personal projects.
 1. Push this project to a GitHub repo
 2. Sign in to [Prefect Horizon](https://gofastmcp.com/v2/deployment/fastmcp-cloud) with GitHub
 3. Connect the repo — dependencies auto-detected from `pyproject.toml`
-4. Add `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, and `PGPASSWORD` as
-  deployment environment variables (or add `DATABASE_URL`)
+4. Add `PGPASSWORD` as a deployment environment variable (or add
+  `DATABASE_URL`)
 5. Optionally verify first: `fastmcp inspect main.py:mcp`
 6. Deploy — live at `https://your-project-name.fastmcp.app/mcp`
 

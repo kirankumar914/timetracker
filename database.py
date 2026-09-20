@@ -5,16 +5,22 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 
 
+PGHOST = "a712wc.h.filess.io"
+PGPORT = "61008"
+PGDATABASE = "time_tracking_db_fellitgift"
+PGUSER = "time_tracking_db_fellitgift"
+
+
 def get_connection():
     database_url = os.getenv("DATABASE_URL")
     if database_url:
         return psycopg2.connect(database_url)
     return psycopg2.connect(
-        dbname=os.environ["PGDATABASE"],
-        user=os.environ["PGUSER"],
+        dbname=PGDATABASE,
+        user=PGUSER,
         password=os.environ["PGPASSWORD"],
-        host=os.environ["PGHOST"],
-        port=os.getenv("PGPORT", "5432"),
+        host=PGHOST,
+        port=PGPORT,
     )
 
 
