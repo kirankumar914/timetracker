@@ -10,7 +10,8 @@ PGHOST = "a712wc.h.filess.io"
 PGPORT = "61008"
 PGDATABASE = "time_tracking_db_fellitgift"
 PGUSER = "time_tracking_db_fellitgift"
-PGSCHEMA = os.getenv("PGSCHEMA", "public")
+PGSCHEMA = os.getenv("PGSCHEMA") or "public"
+TIME_ENTRIES = sql.Identifier(PGSCHEMA, "time_entries")
 
 
 def get_connection():
@@ -40,8 +41,8 @@ def _cursor(conn):
 def init_db():
     conn = get_connection()
     cursor = _cursor(conn)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS time_entries (
+    cursor.execute(sql.SQL("""
+        CREATE TABLE IF NOT EXISTS {} (
             id SERIAL PRIMARY KEY,
             employee_name TEXT NOT NULL,
             project TEXT NOT NULL,
@@ -49,8 +50,8 @@ def init_db():
             hours REAL NOT NULL,
             description TEXT NOT NULL DEFAULT ''
         )
-    """)
-    cursor.execute("SELECT COUNT(*) AS count FROM time_entries")
+    """).format(TIME_ENTRIES))
+    cursor.execute(sql.SQL("SELECT COUNT(*) AS count FROM {}").format(TIME_ENTRIES))
     count = cursor.fetchone()["count"]
     if count == 0:
         seed = [
@@ -61,8 +62,8 @@ def init_db():
             ("Rahul Mehta", "Internal Tools", "2026-09-09", 8.0, "Dashboard bug fixes"),
         ]
         cursor.executemany(
-            "INSERT INTO time_entries (employee_name, project, entry_date, hours, description) "
-            "VALUES (%s, %s, %s, %s, %s)",
+            sql.SQL("INSERT INTO {} (employee_name, project, entry_date, hours, description) "
+            "VALUES (%s, %s, %s, %s, %s)").format(TIME_ENTRIES),
             seed,
         )
         conn.commit()
@@ -76,7 +77,7 @@ def _row_to_dict(row) -> dict:
 def list_all_entries() -> list[dict]:
     conn = get_connection()
     cursor = _cursor(conn)
-    cursor.execute("SELECT * FROM time_entries ORDER BY entry_date DESC, id DESC")
+    cursor.execute(sql.SQL("SELECT * FROM {} ORDER BY entry_date DESC, id DESC").format(TIME_ENTRIES))
     rows = cursor.fetchall()
     conn.close()
     return [_row_to_dict(r) for r in rows]
@@ -87,9 +88,10 @@ def log_time(employee_name: str, project: str, entry_date: str, hours: float, de
         raise ValueError("hours must be a positive number")
     conn = get_connection()
     cursor = _cursor(conn)
-    cursor.execute(
-        "INSERT INTO time_entries (employee_name, project, entry_date, hours, description) "
-        "VALUES (%s, %s, %s, %s, %s) RETURNING *",
+    cursor.execute(sql.SQL(
+        "INSERT INTO {} (employee_name, project, entry_date, hours, description) "
+        "VALUES (%s, %s, %s, %s, %s) RETURNING *"
+    ).format(TIME_ENTRIES),
         (employee_name, project, entry_date, hours, description),
     )
     conn.commit()
@@ -103,15 +105,15 @@ def log_time(employee_name: str, project: str, entry_date: str, hours: float, de
 def get_timesheet(employee_name: str, start_date: str | None = None, end_date: str | None = None) -> list[dict]:
     conn = get_connection()
     cursor = _cursor(conn)
-    query = "SELECT * FROM time_entries WHERE employee_name = %s"
+    query = sql.SQL("SELECT * FROM {} WHERE employee_name = %s").format(TIME_ENTRIES)
     params: list = [employee_name]
     if start_date:
-        query += " AND entry_date >= %s"
+        query += sql.SQL(" AND entry_date >= %s")
         params.append(start_date)
     if end_date:
-        query += " AND entry_date <= %s"
+        query += sql.SQL(" AND entry_date <= %s")
         params.append(end_date)
-    query += " ORDER BY entry_date"
+    query += sql.SQL(" ORDER BY entry_date")
     cursor.execute(query, params)
     rows = cursor.fetchall()
     conn.close()
@@ -128,7 +130,7 @@ def execute_query(query: str, params: list = []) -> list[dict]:
 def list_projects() -> list[str]:
     conn = get_connection()
     cursor = _cursor(conn)
-    cursor.execute("SELECT DISTINCT project FROM time_entries ORDER BY project")
+    cursor.execute(sql.SQL("SELECT DISTINCT project FROM {} ORDER BY project").format(TIME_ENTRIES))
     rows = cursor.fetchall()
     conn.close()
     return [r["project"] for r in rows]
@@ -137,9 +139,10 @@ def list_projects() -> list[str]:
 def get_project_summary(project: str) -> dict:
     conn = get_connection()
     cursor = _cursor(conn)
-    cursor.execute(
-        "SELECT employee_name, SUM(hours) as total_hours FROM time_entries "
-        "WHERE project = %s GROUP BY employee_name ORDER BY employee_name",
+    cursor.execute(sql.SQL(
+        "SELECT employee_name, SUM(hours) as total_hours FROM {} "
+        "WHERE project = %s GROUP BY employee_name ORDER BY employee_name"
+    ).format(TIME_ENTRIES),
         (project,),
     )
     rows = cursor.fetchall()
