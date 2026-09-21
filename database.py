@@ -15,7 +15,9 @@ TIME_ENTRIES = sql.Identifier(PGSCHEMA, "time_entries")
 
 
 def get_connection():
-    database_url = os.getenv("DATABASE_URL")
+    database_url = os.getenv("DATABASE_URL", "").strip()
+    if database_url.startswith("DATABASE_URL="):
+        database_url = database_url.split("=", 1)[1].strip().strip("\"'")
     if database_url:
         conn = psycopg2.connect(database_url)
     else:
